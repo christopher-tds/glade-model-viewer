@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Glade Model Library</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
+<style>
+/* Layout: fixed 300px library rail on the left, full-bleed stage on the right; stacks below 768px. Dark only. */
+:root {
+  --bg: #0b0c0f;
+  --rail: #111317;
+  --panel: #16191f;
+  --line: #22262e;
+  --line-strong: #2e333d;
+  --fg: #e7e9ee;
+  --fg-2: #9aa1ad;
+  --fg-3: #636a76;
+  --accent: #7c93ff;
+  --accent-soft: rgba(124, 147, 255, 0.12);
+  --danger: #ff7a7a;
+  --font: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --radius: 8px;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 13px/1.45 var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+.app { display: grid; grid-template-columns: 300px minmax(0, 1fr); height: 100%; }
+
+/* Rail */
+.rail { display: flex; flex-direction: column; min-height: 0; background: var(--rail); border-right: 1px solid var(--line); }
+.brand { display: flex; align-items: center; gap: 10px; padding: 16px 16px 12px; }
+.brand-mark { width: 24px; height: 24px; border-radius: 6px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); font-size: 15px; }
+.brand-name { font-weight: 600; letter-spacing: -0.01em; }
+.brand-count { margin-left: auto; font: 500 11px var(--mono); color: var(--fg-3); }
+.search { position: relative; margin: 0 12px 8px; }
+.search i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--fg-3); font-size: 14px; pointer-events: none; }
+.search input {
+  width: 100%; height: 32px; padding: 0 34px 0 32px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  color: var(--fg); font: inherit; outline: none; transition: border-color .15s, box-shadow .15s;
+}
+.search input::placeholder { color: var(--fg-3); }
+.search input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.search kbd { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); }
+kbd { font: 500 10px var(--mono); color: var(--fg-3); border: 1px solid var(--line-strong); border-radius: 4px; padding: 1px 5px; background: var(--bg); }
+.list { flex: 1; overflow-y: auto; padding: 4px 8px 16px; outline: none; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+.group-label {
+  display: flex; justify-content: space-between; padding: 14px 8px 6px;
+  font-size: 10.5px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: var(--fg-3);
+}
+.group-label span:last-child { font-family: var(--mono); letter-spacing: 0; }
+.row {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px;
+  width: 100%; padding: 7px 8px; border: 0; border-radius: 6px; background: transparent;
+  color: var(--fg-2); font: inherit; text-align: left; cursor: pointer; transition: background .12s, color .12s;
+}
+.row:hover { background: var(--panel); color: var(--fg); }
+.row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.row.active { background: var(--accent-soft); color: var(--fg); }
+.row.active .swatch { box-shadow: 0 0 0 1px var(--accent); }
+.swatch { width: 14px; height: 14px; border-radius: 50%; overflow: hidden; display: flex; transform: rotate(-45deg); box-shadow: 0 0 0 1px var(--line-strong); }
+.swatch b { flex: 1; }
+.row-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row-src { color: var(--accent); font-size: 11px; margin-left: 6px; }
+.tag { font: 500 10px var(--mono); color: var(--fg-3); padding: 1px 5px; border: 1px solid var(--line); border-radius: 4px; }
+.row.active .tag { color: var(--accent); border-color: rgba(124, 147, 255, 0.35); }
+.empty-list { padding: 24px 8px; color: var(--fg-3); text-align: center; }
+
+/* Stage */
+.stage { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.topbar { display: flex; align-items: center; gap: 16px; min-height: 57px; padding: 10px 20px; border-bottom: 1px solid var(--line); }
+.crumbs { min-width: 0; flex: 1; }
+.crumbs-path { font-size: 11.5px; color: var(--fg-3); }
+.crumbs-title { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.actions { display: flex; gap: 6px; flex-shrink: 0; }
+.btn {
+  display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  color: var(--fg-2); font: 500 12px var(--font); text-decoration: none; cursor: pointer;
+  transition: color .12s, border-color .12s, background .12s;
+}
+.btn:hover { color: var(--fg); border-color: var(--line-strong); }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.btn[aria-pressed="true"] { color: var(--accent); border-color: rgba(124, 147, 255, 0.4); background: var(--accent-soft); }
+.btn:disabled { opacity: .4; pointer-events: none; }
+.btn i { font-size: 14px; }
+
+.viewport {
+  position: relative; flex: 1; min-height: 0;
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 45%, #1b1f28 0%, transparent 70%),
+    radial-gradient(circle at 50% 50%, transparent 0 0), var(--bg);
+}
+.viewport::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .5;
+  background-image: radial-gradient(var(--line) 1px, transparent 1px); background-size: 24px 24px;
+  mask-image: radial-gradient(ellipse 60% 55% at 50% 50%, #000 20%, transparent 75%);
+}
+model-viewer { position: absolute; inset: 0; width: 100%; height: 100%; background: transparent; --poster-color: transparent; --progress-bar-height: 0px; }
+.placeholder { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 10px; text-align: center; color: var(--fg-3); padding: 24px; }
+.placeholder i { font-size: 40px; color: var(--line-strong); }
+.placeholder strong { color: var(--fg-2); font-weight: 500; font-size: 14px; }
+.hint { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: center; }
+
+.progress { position: absolute; left: 0; right: 0; top: 0; height: 2px; background: transparent; overflow: hidden; }
+.progress-bar { height: 100%; width: 0; background: var(--accent); transition: width .15s, opacity .3s; box-shadow: 0 0 10px var(--accent); }
+.status {
+  position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 8px; padding: 6px 12px;
+  background: rgba(22, 25, 31, 0.85); border: 1px solid var(--line); border-radius: 999px;
+  backdrop-filter: blur(8px); font: 500 11.5px var(--mono); color: var(--fg-2); white-space: nowrap;
+  transition: opacity .2s;
+}
+.status.error { color: var(--danger); }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 1s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .3; } }
+
+.meta { display: flex; gap: 20px; flex-wrap: wrap; padding: 10px 20px; border-top: 1px solid var(--line); font-size: 11.5px; color: var(--fg-3); }
+.meta dt { display: inline; }
+.meta dd { display: inline; margin: 0 0 0 6px; font-family: var(--mono); color: var(--fg-2); font-variant-numeric: tabular-nums; }
+.export { position: relative; }
+.menu {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 10; width: 220px; padding: 4px;
+  background: var(--panel); border: 1px solid var(--line-strong); border-radius: var(--radius);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+.menu button {
+  display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; width: 100%; padding: 8px; border: 0; border-radius: 6px;
+  background: transparent; color: var(--fg); font: inherit; text-align: left; cursor: pointer;
+}
+.menu button:hover, .menu button:focus-visible { background: var(--accent-soft); outline: none; }
+.menu i { grid-row: span 2; font-size: 16px; color: var(--fg-2); align-self: center; }
+.menu small { color: var(--fg-3); font-size: 11px; }
+.menu hr { border: 0; border-top: 1px solid var(--line); margin: 4px 0; }
+.pose-list { max-height: 260px; overflow-y: auto; }
+.pose { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; border-radius: 6px; }
+.pose:hover { background: var(--accent-soft); }
+.pose .pose-go { grid-template-columns: auto minmax(0, 1fr); }
+.pose .pose-go span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pose .pose-go small { grid-column: 2; font-family: var(--mono); }
+.pose .pose-del { display: grid; place-items: center; width: 28px; height: 28px; margin-right: 4px; padding: 0; color: var(--fg-3); opacity: 0; }
+.pose:hover .pose-del, .pose-del:focus-visible { opacity: 1; }
+.pose .pose-del:hover { color: var(--danger); background: transparent; }
+.pose .pose-del i { grid-row: auto; font-size: 14px; color: inherit; }
+.menu .pose-empty { padding: 8px; color: var(--fg-3); font-size: 12px; }
+.menu .menu-foot { padding: 6px 8px 4px; color: var(--fg-3); font-size: 11px; }
+.menu label { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; color: var(--fg-2); font-size: 12px; }
+.menu select { background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 4px; font: 500 11px var(--mono); padding: 2px 4px; }
+.toast { position: fixed; right: 20px; bottom: 20px; padding: 8px 12px; background: var(--panel); border: 1px solid var(--line-strong); border-radius: var(--radius); font-size: 12px; opacity: 0; transform: translateY(6px); transition: opacity .2s, transform .2s; pointer-events: none; }
+.toast.show { opacity: 1; transform: none; }
+
+@media (max-width: 767px) {
+  .app { grid-template-columns: 1fr; grid-template-rows: 46vh minmax(0, 1fr); }
+  .rail { order: 2; border-right: 0; border-top: 1px solid var(--line); }
+  .stage { order: 1; }
+  .topbar { padding: 8px 16px; }
+  .btn span { display: none; }
+  .meta { display: none; }
+  .search kbd { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="rail">
+    <div class="brand">
+      <div class="brand-mark"><i class="ph ph-cube"></i></div>
+      <div class="brand-name">Model Library</div>
+      <div class="brand-count" id="count"></div>
+    </div>
+    <label class="search">
+      <i class="ph ph-magnifying-glass"></i>
+      <input id="q" type="search" placeholder="Filter models" autocomplete="off" spellcheck="false" aria-label="Filter models">
+      <kbd>/</kbd>
+    </label>
+    <div class="list" id="list" role="listbox" aria-label="Models" tabindex="0"></div>
+  </aside>
+
+  <main class="stage">
+    <header class="topbar">
+      <div class="crumbs">
+        <div class="crumbs-path" id="crumb-path">Glade · 3D assets</div>
+        <div class="crumbs-title" id="crumb-title">No model selected</div>
+      </div>
+      <div class="actions">
+        <button class="btn" id="rotate" aria-pressed="false" disabled title="Auto-rotate (R)"><i class="ph ph-arrows-clockwise"></i><span>Rotate</span></button>
+        <button class="btn" id="reset" disabled title="Reset camera (0)"><i class="ph ph-crosshair-simple"></i><span>Reset</span></button>
+        <button class="btn" id="copy" disabled title="Copy URL"><i class="ph ph-link-simple"></i><span>Copy URL</span></button>
+        <div class="export poses">
+          <button class="btn" id="poses" disabled aria-haspopup="true" aria-expanded="false" title="Saved poses (P)"><i class="ph ph-bookmark-simple"></i><span>Poses</span></button>
+          <div class="menu" id="poses-menu" role="menu" hidden>
+            <button role="menuitem" id="pose-save"><i class="ph ph-plus"></i>Save current pose<small>Shortcut: S</small></button>
+            <hr>
+            <div class="pose-list" id="pose-list"></div>
+            <div class="menu-foot">Poses work on any model, so you can shoot every colorway from the same angle. Press 1–9 to recall.</div>
+          </div>
+        </div>
+        <div class="export">
+          <button class="btn" id="export" disabled aria-haspopup="true" aria-expanded="false" title="Export image (E)"><i class="ph ph-image"></i><span>Export</span></button>
+          <div class="menu" id="export-menu" role="menu" hidden>
+            <button role="menuitem" data-fmt="png"><i class="ph ph-file-png"></i>PNG<small>Transparent background</small></button>
+            <button role="menuitem" data-fmt="jpeg"><i class="ph ph-file-jpg"></i>JPEG<small>White background</small></button>
+            <hr>
+            <label for="export-scale">Size
+              <select id="export-scale"><option value="1" selected>1×</option><option value="2">2×</option><option value="3">3×</option></select>
+            </label>
+          </div>
+        </div>
+        <a class="btn" id="open" target="_blank" rel="noopener" aria-disabled="true" title="Open .glb in a new tab"><i class="ph ph-arrow-square-out"></i><span>Open</span></a>
+      </div>
+    </header>
+
+    <div class="viewport">
+      <div class="placeholder" id="placeholder">
+        <i class="ph ph-cube-transparent"></i>
+        <strong>Pick a model from the list</strong>
+        <div class="hint">One model loads at a time. Use <kbd>↑</kbd><kbd>↓</kbd> to browse.</div>
+      </div>
+      <model-viewer id="mv" camera-controls touch-action="pan-y" shadow-intensity="0.6" exposure="1" environment-image="neutral" interaction-prompt="none" hidden></model-viewer>
+      <div class="progress"><div class="progress-bar" id="bar"></div></div>
+      <div class="status" id="status" hidden></div>
+    </div>
+
+    <dl class="meta" id="meta" hidden>
+      <div><dt>File</dt><dd id="m-file"></dd></div>
+      <div><dt>Size</dt><dd id="m-size"></dd></div>
+      <div><dt>Product</dt><dd id="m-product"></dd></div>
+      <div><dt>View</dt><dd id="m-view"></dd></div>
+      <div><dt>Source</dt><dd id="m-source"></dd></div>
+    </dl>
+  </main>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const RAW = [["https://cdn.shopify.com/3d/models/01378ed922e39453/adapt_3_blue_arctic_blue_fs.glb",13213160],
+  ["https://cdn.shopify.com/3d/models/01433118465bb0bd/adapt_3s_blue_lavender_fs.glb",11006088],
+  ["https://cdn.shopify.com/3d/models/09b5a4cda3670980/adapt_3_blue_black_ll.glb",13162260],
+  ["https://cdn.shopify.com/3d/models/0aecd09c3a166d74/divide_blue_black_fs.glb",13754364],
+  ["https://cdn.shopify.com/3d/models/0ea71a2f821f52f5/f2c_blue_black_fs.glb",13105928],
+  ["https://cdn.shopify.com/3d/models/11ff17d65da0be9b/divide_bronze_forest_ll.glb",13764256],
+  ["https://cdn.shopify.com/3d/models/20f41f4851a8151f/adapt_3_orange_black_ll.glb",13155156],
+  ["https://cdn.shopify.com/3d/models/21ee6f960d916fac/divide_silver_blue_ll.glb",13807528],
+  ["https://cdn.shopify.com/3d/models/21f89f6cccb50b0f/divide_orange_black_ll.glb",13747424],
+  ["https://cdn.shopify.com/3d/models/231d8b01220b200d/divide_bronze_forest_fs.glb",13764240],
+  ["https://cdn.shopify.com/3d/models/26be7eab342acaa7/f2c_blue_black_ll2.glb",13106096],
+  ["https://cdn.shopify.com/3d/models/281cc615b381b7d0/adapt_3s_purple_navy_fs.glb",10748644],
+  ["https://cdn.shopify.com/3d/models/2a13367773c12efa/f2c_bronze_black_fs.glb",13109620],
+  ["https://cdn.shopify.com/3d/models/30808298c4224f71/adapt_3_orange_snow_ll.glb",13225044],
+  ["https://cdn.shopify.com/3d/models/335494aee717b263/f2t_blue_navy_ll.glb",12179232],
+  ["https://cdn.shopify.com/3d/models/340a7dcef85d8d4d/f2t_blue_navy_fs.glb",12179060],
+  ["https://cdn.shopify.com/3d/models/354f9a94ab23b4c1/divide_black_black_ll.glb",13729972],
+  ["https://cdn.shopify.com/3d/models/409df789f1b0aa65/divide_blue_snow_ll.glb",13830000],
+  ["https://cdn.shopify.com/3d/models/443a2de6eef2cc7e/f2c_orange_black_ll.glb",13098636],
+  ["https://cdn.shopify.com/3d/models/46e20c5cf2244bb7/f2t_silver_blue_fs.glb",12448144],
+  ["https://cdn.shopify.com/3d/models/49fdfdf5a8d6d096/adapt_3_blue_snow_ll.glb",13232148],
+  ["https://cdn.shopify.com/3d/models/4a7bad21c5e63bb1/adapt_3s_purple_lavender_fs.glb",10984632],
+  ["https://cdn.shopify.com/3d/models/4a93bf3ce03b70b7/f2c_orange_forest_ll.glb",13090836],
+  ["https://cdn.shopify.com/3d/models/4aebc7a509d28f1c/adapt_3s_orange_black_ll.glb",10862884],
+  ["https://cdn.shopify.com/3d/models/516d9e56c75e0e37/f2t_blue_black_ll.glb",12484872],
+  ["https://cdn.shopify.com/3d/models/55e6d428ebb5b812/f2t_blue_black_fs.glb",12484700],
+  ["https://cdn.shopify.com/3d/models/570292feea9a172f/f2t_silver_blue_ll.glb",12448164],
+  ["https://cdn.shopify.com/3d/models/5e06300e765a65d5/adapt_3_blue_snow_fs.glb",13231980],
+  ["https://cdn.shopify.com/3d/models/eb16eca3ce3d0ab6/adapt_3_blue_snow_fs.glb",891248,"Our Tech page"],
+  ["https://cdn.shopify.com/3d/models/5e9b125cd3c2e7e8/divide_purple_lavender_fs.glb",13997288],
+  ["https://cdn.shopify.com/3d/models/613eb5468e89c45d/adapt_3_purple_lavender_fs.glb",13415572],
+  ["https://cdn.shopify.com/3d/models/644e6b0056aa370c/adapt_3_bronze_black_ll.glb",13165804],
+  ["https://cdn.shopify.com/3d/models/6601638a6cbac4f6/adapt_3s_black_tangerine_fs.glb",10904848],
+  ["https://cdn.shopify.com/3d/models/69cc6489a6aff0e5/adapt_3s_silver_arctic_blue_fs.glb",10804096],
+  ["https://cdn.shopify.com/3d/models/6c6539984a6766ba/adapt_3_black_black_ll.glb",13137704],
+  ["https://cdn.shopify.com/3d/models/6e7fd081fac26449/adapt_3_bronze_black_fs.glb",13165788],
+  ["https://cdn.shopify.com/3d/models/73081343f562d2a1/f2t_bronze_black_ll.glb",12488412],
+  ["https://cdn.shopify.com/3d/models/733d109a3c3a4e18/adapt_3s_blue_lavender_ll.glb",11006256],
+  ["https://cdn.shopify.com/3d/models/79e57d70809d76c4/adapt_3s_pink_snow_fs.glb",10897924],
+  ["https://cdn.shopify.com/3d/models/7a87228ab8ade8d4/f2c_orange_black_fs.glb",13098620],
+  ["https://cdn.shopify.com/3d/models/7bc2d903012cb560/adapt_3s_orange_black_fs.glb",10862868],
+  ["https://cdn.shopify.com/3d/models/7d0e6df69b430a1b/fathom_2_toric_-_new_pink_fs.glb",13734064],
+  ["https://cdn.shopify.com/3d/models/7e4993c764f61a3a/adapt_3s_blue_snow_ll.glb",10904020],
+  ["https://cdn.shopify.com/3d/models/7f580c6839ab88d3/adapt_3_blue_black_fs.glb",13162092],
+  ["https://cdn.shopify.com/3d/models/812735c7de9a988d/divide_black_black_fs.glb",13730124],
+  ["https://cdn.shopify.com/3d/models/81987ce70d5e7257/adapt_3_orange_snow_fs.glb",13225028],
+  ["https://cdn.shopify.com/3d/models/82f6b31452b95670/f2t_bronze_black_fs.glb",12488392],
+  ["https://cdn.shopify.com/3d/models/83b54e731344e1a3/divide_silver_blue_fs.glb",13807512],
+  ["https://cdn.shopify.com/3d/models/8f190dfd54b8c37a/f2t_orange_black_fs.glb",12477744],
+  ["https://cdn.shopify.com/3d/models/8f39eea3d10dbbe5/adapt_3s_silver_arctic_blue_ll.glb",10804112],
+  ["https://cdn.shopify.com/3d/models/8f4a7caca8dd2352/adapt_3_green_black_fs.glb",13169700],
+  ["https://cdn.shopify.com/3d/models/90e7c5fccaa552c2/f2c_blue_navy_fs.glb",12818164],
+  ["https://cdn.shopify.com/3d/models/94fea06ff8163a96/f2c_pink_gray_fs.glb",12961364],
+  ["https://cdn.shopify.com/3d/models/961ab3926e589f7b/adapt_3s_blue_snow_fs.glb",10903852],
+  ["https://cdn.shopify.com/3d/models/9b011a420639f77a/divide_blue_black_ll.glb",13754532],
+  ["https://cdn.shopify.com/3d/models/9b7af0d2a9764e37/f2c_orange_forest_fs.glb",13090820],
+  ["https://cdn.shopify.com/3d/models/9b8cf6690edd8967/adapt_3s_bronze_black_ll.glb",10873532],
+  ["https://cdn.shopify.com/3d/models/9de150accb0d7ba7/f2t_orange_black_ll.glb",12477764],
+  ["https://cdn.shopify.com/3d/models/a3c3efb09cb3a27e/f2c_pink_gray_ll.glb",12961224],
+  ["https://cdn.shopify.com/3d/models/ba6f645f61840ba2/f2c_silver_blue_ll.glb",13188280],
+  ["https://cdn.shopify.com/3d/models/be54aabf00edac71/adapt_3_orange_black_fs.glb",13155140],
+  ["https://cdn.shopify.com/3d/models/c1465816ccfc3fef/adapt_3s_pink_snow_ll.glb",10897788],
+  ["https://cdn.shopify.com/3d/models/c4e53c7c0412848a/adapt_3_orange_forest_ll.glb",13162316],
+  ["https://cdn.shopify.com/3d/models/cc7d20cbf01e6789/boundary-test-import.glb",51464148],
+  ["https://cdn.shopify.com/3d/models/cc9dee35b9fa8877/adapt_3s_purple_navy_ll.glb",10748660],
+  ["https://cdn.shopify.com/3d/models/cdbf54df07886ac9/f2t_orange_forest_ll.glb",12397180],
+  ["https://cdn.shopify.com/3d/models/d772e2680b949018/divide_orange_black_fs.glb",13747408],
+  ["https://cdn.shopify.com/3d/models/d8c8cbd63b923ea3/f2c_blue_navy_ll.glb",12818332],
+  ["https://cdn.shopify.com/3d/models/d91b295797c92241/f2t_orange_forest_fs.glb",12397160],
+  ["https://cdn.shopify.com/3d/models/e02594c4f7f93f22/divide_purple_lavender_ll.glb",13997304],
+  ["https://cdn.shopify.com/3d/models/e3f8816098010552/f2c_bronze_black_ll.glb",13109636],
+  ["https://cdn.shopify.com/3d/models/e49a165ef04b1ce7/adapt_3_orange_forest_fs.glb",13162300],
+  ["https://cdn.shopify.com/3d/models/e7e63eaaafe154b4/adapt_3_black_camo_ll.glb",13584244],
+  ["https://cdn.shopify.com/3d/models/e832a03f6abbcb09/adapt_3s_bronze_black_fs.glb",10873516],
+  ["https://cdn.shopify.com/3d/models/eba450ae7cd082c7/divide_blue_snow_fs.glb",13829832],
+  ["https://cdn.shopify.com/3d/models/ec409ff423b1a78d/adapt_3_green_black_ll.glb",13169716],
+  ["https://cdn.shopify.com/3d/models/ef9bc0c947a3925b/adapt_3s_purple_lavender_ll.glb",10984648],
+  ["https://cdn.shopify.com/3d/models/efbf997bfd33a8f6/adapt_3_black_camo_fs.glb",13584392],
+  ["https://cdn.shopify.com/3d/models/f28a12a6b98fb0ed/adapt_3_black_black_fs.glb",13137852],
+  ["https://cdn.shopify.com/3d/models/f698ecb135d4c696/f2c_silver_blue_fs.glb",13188264],
+  ["https://cdn.shopify.com/3d/models/f9f84ec7f9931b44/adapt_3s_black_tangerine_ll.glb",10904696],
+  ["https://cdn.shopify.com/3d/models/fcef0bf74191e599/adapt_3_purple_lavender_ll.glb",13415588]];
+
+const PRODUCTS = [
+  ["adapt_3s_", "Adapt 3S"],
+  ["adapt_3_", "Adapt 3"],
+  ["divide_", "Divide"],
+  ["f2c_", "F2C"],
+  ["f2t_", "Fathom 2 Toric"],
+  ["fathom_2_toric_-_", "Fathom 2 Toric"],
+];
+const ORDER = ["Adapt 3", "Adapt 3S", "Divide", "F2C", "Fathom 2 Toric", "Other"];
+const COLORS = {
+  black: "#1a1a1a", blue: "#3b6fd8", arctic_blue: "#8fd3f4", lavender: "#b9a6e8", orange: "#f08a2e",
+  forest: "#2f5d3a", silver: "#c3c7cc", bronze: "#a9733f", purple: "#7a4bc2", navy: "#1f2d55",
+  snow: "#f2f4f7", green: "#4c9a52", camo: "#6b6a45", pink: "#f29bc0", gray: "#7c8088",
+  tangerine: "#ff9b3d", new_pink: "#ff8fb8",
+};
+const VIEWS = { fs: "FS", ll: "LL", ll2: "LL2" };
+const title = s => s.split("_").map(w => w[0].toUpperCase() + w.slice(1)).join(" ");
+
+function parse([url, size, source = "Gist"]) {
+  const file = url.split("/").pop();
+  let stem = file.replace(/\.glb$/, "");
+  let product = "Other", rest = stem;
+  for (const [p, name] of PRODUCTS) if (stem.startsWith(p)) { product = name; rest = stem.slice(p.length); break; }
+  let view = "";
+  const m = rest.match(/_(fs|ll2?|ll)$/);
+  if (m) { view = VIEWS[m[1]]; rest = rest.slice(0, -m[0].length); }
+  let colors = [];
+  if (product !== "Other") {
+    let r = rest;
+    while (r) {
+      const hit = Object.keys(COLORS).sort((a, b) => b.length - a.length).find(c => r === c || r.startsWith(c + "_"));
+      if (!hit) { colors.push(r); break; }
+      colors.push(hit); r = r.slice(hit.length + 1);
+    }
+  }
+  const name = product === "Other" ? title(stem.replace(/-/g, "_")) : colors.map(title).join(" / ");
+  return { url, size, file, product, view, colors, name, source };
+}
+
+const MODELS = RAW.map(parse).sort((a, b) =>
+  ORDER.indexOf(a.product) - ORDER.indexOf(b.product) || a.name.localeCompare(b.name) || a.view.localeCompare(b.view));
+
+const $ = id => document.getElementById(id);
+const list = $("list"), q = $("q"), mv = $("mv");
+const fmtMB = b => (b / 1048576).toFixed(1) + " MB";
+let visible = [], activeIdx = -1, loadTimer = null, loadedUrl = null;
+
+function swatch(m) {
+  const cs = m.colors.length ? m.colors : ["gray"];
+  return `<span class="swatch">${cs.map(c => `<b style="background:${COLORS[c] || "#555"}"></b>`).join("")}</span>`;
+}
+
+function render() {
+  const term = q.value.trim().toLowerCase();
+  const words = term.split(/\s+/).filter(Boolean);
+  visible = MODELS.filter(m => {
+    const hay = (m.product + " " + m.name + " " + m.file + " " + m.view + " " + m.source).toLowerCase();
+    return words.every(w => hay.includes(w));
+  });
+  $("count").textContent = term ? `${visible.length}/${MODELS.length}` : MODELS.length;
+  if (!visible.length) { list.innerHTML = `<div class="empty-list">No models match “${q.value}”.</div>`; return; }
+  let html = "", group = null;
+  visible.forEach((m, i) => {
+    if (m.product !== group) {
+      group = m.product;
+      const n = visible.filter(v => v.product === group).length;
+      html += `<div class="group-label"><span>${group}</span><span>${n}</span></div>`;
+    }
+    const active = m.url === loadedUrl || (activeIdx >= 0 && visible[activeIdx] === m);
+    html += `<button class="row${active ? " active" : ""}" data-i="${i}" role="option" aria-selected="${active}" title="${m.file}">
+      ${swatch(m)}<span class="row-name">${m.name}${m.source !== "Gist" ? `<span class="row-src">${m.source}</span>` : ""}</span>${m.view ? `<span class="tag">${m.view}</span>` : "<span></span>"}</button>`;
+  });
+  list.innerHTML = html;
+  activeIdx = visible.findIndex(m => m.url === (pending?.url || loadedUrl));
+}
+
+let pending = null;
+function select(i, { immediate = false } = {}) {
+  if (i < 0 || i >= visible.length) return;
+  activeIdx = i;
+  const m = visible[i];
+  pending = m;
+  list.querySelectorAll(".row").forEach(r => {
+    const on = +r.dataset.i === i;
+    r.classList.toggle("active", on);
+    r.setAttribute("aria-selected", on);
+    if (on) r.scrollIntoView({ block: "nearest" });
+  });
+  showMeta(m);
+  clearTimeout(loadTimer);
+  // Debounce so skimming the list never starts a pile of 13 MB downloads.
+  loadTimer = setTimeout(() => load(m), immediate ? 0 : 300);
+}
+
+function showMeta(m) {
+  $("crumb-path").textContent = `Glade · ${m.product}`;
+  $("crumb-title").textContent = m.name + (m.view ? ` · ${m.view}` : "");
+  $("m-file").textContent = m.file;
+  $("m-size").textContent = fmtMB(m.size);
+  $("m-product").textContent = m.product;
+  $("m-view").textContent = m.view || "—";
+  $("m-source").textContent = m.source;
+  $("meta").hidden = false;
+  $("open").href = m.url;
+  $("open").removeAttribute("aria-disabled");
+  ["rotate", "reset", "copy", "export", "poses"].forEach(id => $(id).disabled = false);
+}
+
+function load(m) {
+  if (m.url === loadedUrl) return;
+  loadedUrl = m.url;
+  $("placeholder").hidden = true;
+  mv.hidden = false;
+  mv.removeAttribute("src"); // release the previous model before fetching the next
+  status(`Loading ${fmtMB(m.size)}…`, true);
+  $("bar").style.opacity = 1;
+  $("bar").style.width = "2%";
+  mv.src = m.url;
+}
+
+function status(text, busy, error) {
+  const s = $("status");
+  s.hidden = !text;
+  s.className = "status" + (error ? " error" : "");
+  s.innerHTML = (busy ? '<span class="dot"></span>' : "") + (text || "");
+}
+
+mv.addEventListener("progress", e => {
+  const p = e.detail.totalProgress;
+  $("bar").style.width = Math.max(2, p * 100) + "%";
+  if (p < 1) status(`Loading ${Math.round(p * 100)}% of ${fmtMB(pending?.size || 0)}`, true);
+});
+mv.addEventListener("load", () => {
+  $("bar").style.width = "100%";
+  setTimeout(() => { $("bar").style.opacity = 0; }, 250);
+  status("");
+});
+mv.addEventListener("error", () => {
+  $("bar").style.opacity = 0;
+  status("Couldn’t load this model. Check your connection and pick it again.", false, true);
+  loadedUrl = null;
+});
+
+list.addEventListener("click", e => {
+  const r = e.target.closest(".row");
+  if (r) select(+r.dataset.i, { immediate: true });
+});
+q.addEventListener("input", render);
+q.addEventListener("keydown", e => {
+  if (e.key === "ArrowDown") { e.preventDefault(); list.focus(); select(Math.max(0, activeIdx + 1 > visible.length - 1 ? 0 : activeIdx + 1)); }
+  if (e.key === "Enter" && visible.length) select(activeIdx >= 0 ? activeIdx : 0, { immediate: true });
+  if (e.key === "Escape") { q.value = ""; render(); q.blur(); }
+});
+document.addEventListener("keydown", e => {
+  if (e.target === q) return;
+  if (e.key === "/") { e.preventDefault(); q.focus(); q.select(); }
+  else if (e.key === "ArrowDown" || e.key === "j") { e.preventDefault(); select(Math.min(visible.length - 1, activeIdx + 1)); }
+  else if (e.key === "ArrowUp" || e.key === "k") { e.preventDefault(); select(Math.max(0, activeIdx - 1)); }
+  else if ((e.key === "r" || e.key === "R") && !$("rotate").disabled) $("rotate").click();
+  else if (e.key === "0" && !$("reset").disabled) $("reset").click();
+  else if ((e.key === "e" || e.key === "E") && !$("export").disabled) toggleMenu();
+  else if ((e.key === "p" || e.key === "P") && !$("poses").disabled) togglePoses();
+  else if ((e.key === "s" || e.key === "S") && mv.loaded) savePose();
+  else if (/^[1-9]$/.test(e.key) && mv.loaded && poses[+e.key - 1]) applyPose(poses[+e.key - 1]);
+  else if (e.key === "Escape") { toggleMenu(false); togglePoses(false); }
+});
+
+$("rotate").addEventListener("click", () => {
+  const on = !mv.autoRotate;
+  mv.autoRotate = on;
+  $("rotate").setAttribute("aria-pressed", on);
+});
+$("reset").addEventListener("click", () => {
+  mv.cameraOrbit = "0deg 75deg 105%";
+  mv.cameraTarget = "auto auto auto";
+  mv.fieldOfView = "auto";
+  mv.resetTurntableRotation?.(0);
+});
+$("copy").addEventListener("click", async () => {
+  const url = $("open").href;
+  try { await navigator.clipboard.writeText(url); toast("URL copied"); }
+  catch { toast("Couldn’t copy. Use Open and copy from the address bar."); }
+});
+// Export: renders the current camera pose to an image. Resolution multiplies the on-screen viewport size.
+const menu = $("export-menu");
+function toggleMenu(open = menu.hidden) {
+  menu.hidden = !open;
+  $("export").setAttribute("aria-expanded", open);
+  if (open) {
+    togglePoses(false);
+    // Label each option with the real output size (viewport × screen density × multiplier).
+    const d = window.devicePixelRatio || 1, w = mv.clientWidth, h = mv.clientHeight;
+    [...$("export-scale").options].forEach(o => o.textContent = `${Math.round(w * d * o.value)}×${Math.round(h * d * o.value)}`);
+    menu.querySelector("button").focus();
+  }
+}
+$("export").addEventListener("click", e => { e.stopPropagation(); toggleMenu(); });
+document.addEventListener("click", e => { if (!e.target.closest(".export")) toggleMenu(false); });
+menu.addEventListener("click", e => {
+  const b = e.target.closest("[data-fmt]");
+  if (b) { toggleMenu(false); exportImage(b.dataset.fmt, +$("export-scale").value); }
+});
+
+async function exportImage(fmt, scale) {
+  if (!mv.loaded) { toast("Wait for the model to finish loading."); return; }
+  const w = mv.clientWidth, h = mv.clientHeight;
+  try {
+    // Render at a multiple of the viewport by enlarging the element offscreen for one frame.
+    if (scale !== 1) {
+      Object.assign(mv.style, { width: w * scale + "px", height: h * scale + "px" });
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    }
+    let blob = await mv.toBlob({ mimeType: "image/png", idealAspect: false });
+    if (fmt === "jpeg") blob = await flatten(blob, "#ffffff");
+    const theta = Math.round(mv.getCameraOrbit().theta * 180 / Math.PI);
+    const phi = Math.round(mv.getCameraOrbit().phi * 180 / Math.PI);
+    const name = `${pending.file.replace(/\.glb$/, "")}_${theta}deg_${phi}deg.${fmt === "jpeg" ? "jpg" : "png"}`;
+    const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: name });
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    const bmp = await createImageBitmap(blob);
+    toast(`Saved ${name} · ${bmp.width}×${bmp.height}`);
+  } catch (err) {
+    toast("Export failed. Try a lower resolution.");
+  } finally {
+    mv.style.width = mv.style.height = "";
+  }
+}
+async function flatten(png, bg) {
+  const img = await createImageBitmap(png);
+  const c = Object.assign(document.createElement("canvas"), { width: img.width, height: img.height });
+  const ctx = c.getContext("2d");
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, c.width, c.height); ctx.drawImage(img, 0, 0);
+  return new Promise(r => c.toBlob(r, "image/jpeg", 0.92));
+}
+
+// Saved poses: camera angle, distance, target and zoom, kept in this browser's local storage.
+const POSE_KEY = "glade-model-viewer:poses";
+let poses = [];
+try { poses = JSON.parse(localStorage.getItem(POSE_KEY)) || []; } catch {}
+const persist = () => { try { localStorage.setItem(POSE_KEY, JSON.stringify(poses)); } catch { toast("Couldn’t store poses. They’ll be lost on reload."); } };
+const deg = r => Math.round(r * 180 / Math.PI);
+const posesMenu = $("poses-menu");
+
+function togglePoses(open = posesMenu.hidden) {
+  posesMenu.hidden = !open;
+  $("poses").setAttribute("aria-expanded", open);
+  if (open) { toggleMenu(false); renderPoses(); $("pose-save").focus(); }
+}
+$("poses").addEventListener("click", e => { e.stopPropagation(); togglePoses(); });
+document.addEventListener("click", e => { if (!e.target.closest(".poses")) togglePoses(false); });
+$("pose-save").addEventListener("click", () => savePose());
+
+function savePose() {
+  if (!mv.loaded) { toast("Wait for the model to finish loading."); return; }
+  const o = mv.getCameraOrbit(), t = mv.getCameraTarget();
+  const pose = {
+    name: `Pose ${poses.reduce((n, p) => Math.max(n, +(p.name.match(/^Pose (\d+)$/)?.[1] || 0)), 0) + 1}`,
+    from: pending.name + (pending.view ? ` · ${pending.view}` : ""),
+    theta: o.theta, phi: o.phi, radius: o.radius,
+    target: [t.x, t.y, t.z], fov: mv.getFieldOfView(),
+  };
+  poses.push(pose);
+  persist();
+  renderPoses();
+  toast(`Saved ${pose.name}${poses.length <= 9 ? ` · press ${poses.length} to recall` : ""}`);
+}
+
+function applyPose(p) {
+  if (mv.autoRotate) $("rotate").click(); // auto-rotate would drift away from the pose
+  mv.resetTurntableRotation?.(0);
+  mv.cameraTarget = p.target.map(v => v + "m").join(" ");
+  mv.cameraOrbit = `${p.theta}rad ${p.phi}rad ${p.radius}m`;
+  mv.fieldOfView = p.fov + "deg";
+  toast(`Restored ${p.name}`);
+}
+
+function renderPoses() {
+  const el = $("pose-list");
+  if (!poses.length) { el.innerHTML = '<div class="pose-empty">No saved poses yet. Stage the model, then save.</div>'; return; }
+  el.innerHTML = poses.map((p, i) => `<div class="pose">
+      <button class="pose-go" role="menuitem" data-i="${i}" title="Restore ${p.name} (saved on ${p.from})"><i class="ph ph-${i < 9 ? "number-square-" + ["one","two","three","four","five","six","seven","eight","nine"][i] : "bookmark-simple"}"></i><span>${p.name}</span><small>${deg(p.theta)}° · ${deg(p.phi)}° · ${p.from}</small></button>
+      <button class="pose-del" data-del="${i}" aria-label="Delete ${p.name}" title="Delete"><i class="ph ph-trash"></i></button>
+    </div>`).join("");
+}
+$("pose-list").addEventListener("click", e => {
+  const go = e.target.closest("[data-i]"), del = e.target.closest("[data-del]");
+  if (del) { const [p] = poses.splice(+del.dataset.del, 1); persist(); renderPoses(); toast(`Deleted ${p.name}`); }
+  else if (go) {
+    if (!mv.loaded) { toast("Load a model first."); return; }
+    applyPose(poses[+go.dataset.i]); togglePoses(false);
+  }
+});
+
+function toast(t) {
+  const el = $("toast");
+  el.textContent = t; el.classList.add("show");
+  clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove("show"), 1600);
+}
+
+render();
+</script>
+</body>
+</html>
